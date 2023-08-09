@@ -17,6 +17,11 @@ enum MediaItemType {
 public struct MediaProcessResult {
     public var processedUrl: URL?
     public var image: UIImage?
+  
+    public init(processedUrl: URL? = nil, image: UIImage? = nil) {
+        self.processedUrl = processedUrl
+        self.image = image
+    }
 }
 
 public typealias ProcessCompletionHandler = ((_ result: MediaProcessResult, _ error: Error?) -> ())
