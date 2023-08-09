@@ -15,7 +15,7 @@ let kMediaContentTimeValue: Int64 = 1
 let kMediaContentTimeScale: Int32 = 30
 
 extension MediaProcessor {
-    func processVideoWithElements(item: MediaItem, completion: @escaping ProcessCompletionHandler) {
+  func processVideoWithElements(item: MediaItem, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
         let mixComposition = AVMutableComposition()
         let compositionVideoTrack = mixComposition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)
         let clipVideoTrack = item.sourceAsset.tracks(withMediaType: AVMediaType.video).first
@@ -72,25 +72,42 @@ extension MediaProcessor {
         clearTemporaryData(url: processedUrl, completion: completion)
         
         let exportSession = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)
-        exportSession?.videoComposition = videoComposition
-        exportSession?.outputURL = processedUrl
-        exportSession?.outputFileType = AVFileType.mp4
+        guard let exportSession = exportSession else { return }
+        exportSession.videoComposition = videoComposition
+        exportSession.outputURL = processedUrl
+        exportSession.outputFileType = AVFileType.mp4
+    
+        if progressTimer == nil {
+          self.progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            self.progressCallbacks.forEach { key, value in
+              value(Double(key.progress))
+            }
+          }
+        }
         
-        exportSession?.exportAsynchronously(completionHandler: { [weak self] in
+        exportSession.exportAsynchronously(completionHandler: { [weak self] in
             self?.exportSessions.removeAll { $0 == exportSession }
-            if exportSession?.status == AVAssetExportSession.Status.completed {
+            self?.progressCallbacks[exportSession] = nil
+            if self?.progressCallbacks.isEmpty ?? false {
+                self?.clearTimer()
+            }
+            if exportSession.status == AVAssetExportSession.Status.completed {
                 completion(MediaProcessResult(processedUrl: processedUrl, image: nil), nil)
             } else {
-                completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession?.error)
+                completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession.error)
             }
         })
-        if let exportSession = exportSession {
-          exportSessions.append(exportSession)
-        }
+        exportSessions.append(exportSession)
+    }
+  
+    func clearTimer() {
+      progressTimer?.invalidate()
+      progressTimer = nil
     }
   
     public func cancelExport() {
       exportSessions.forEach { $0.cancelExport() }
+      clearTimer()
     }
     
     // MARK: - private

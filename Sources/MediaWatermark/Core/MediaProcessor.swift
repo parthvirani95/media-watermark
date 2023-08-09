@@ -11,9 +11,15 @@ import AVFoundation
 
 public class MediaProcessor {
     internal var exportSessions: [AVAssetExportSession] = []
+    internal var progressCallbacks: [AVAssetExportSession: (Double) -> Void] = [:]
+    internal var progressTimer: Timer? = nil
     public var filterProcessor: FilterProcessor! = nil
     
     public init() {}
+    deinit {
+        progressTimer?.invalidate()
+        progressTimer = nil
+    }
     
     // MARK: - process elements
     public func processElements(item: MediaItem, completion: @escaping ProcessCompletionHandler) {
