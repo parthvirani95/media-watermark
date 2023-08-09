@@ -23,6 +23,6 @@ public class MediaProcessor {
     
     // MARK: - process elements
     public func processElements(item: MediaItem, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
-      item.type == .video ? processVideoWithElements(item: item, completion: completion, progress: progress) : processImageWithElements(item: item, completion: completion)
+      item.type == .video ? processVideoWithElements(item: item, completion: completion, progress: progress) : processImageWithElements(item: item, completion: completion, progress: progress)
     }
 }

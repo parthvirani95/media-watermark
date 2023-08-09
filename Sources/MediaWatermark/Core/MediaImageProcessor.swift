@@ -9,7 +9,7 @@
 import UIKit
 
 extension MediaProcessor {
-    func processImageWithElements(item: MediaItem, completion: @escaping ProcessCompletionHandler) {
+  func processImageWithElements(item: MediaItem, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)?) {
         if item.filter != nil {
             filterProcessor = FilterProcessor(mediaFilter: item.filter)
             filterProcessor.processImage(image: item.sourceImage.fixedOrientation(), completion: { [weak self] (success, finished, image, error) in
@@ -20,16 +20,16 @@ extension MediaProcessor {
 
                     let updatedMediaItem = MediaItem(image: image!)
                     updatedMediaItem.add(elements: item.mediaElements)
-                    self?.processItemAfterFiltering(item: updatedMediaItem, completion: completion)
+                  self?.processItemAfterFiltering(item: updatedMediaItem, completion: completion, progress: progress)
                 }
             })
             
         } else {
-            processItemAfterFiltering(item: item, completion: completion)
+          processItemAfterFiltering(item: item, completion: completion, progress: progress)
         }
     }
     
-    func processItemAfterFiltering(item: MediaItem, completion: @escaping ProcessCompletionHandler) {
+    func processItemAfterFiltering(item: MediaItem, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)?) {
         UIGraphicsBeginImageContextWithOptions(item.sourceImage.size, false, item.sourceImage.scale)
         item.sourceImage.draw(in: CGRect(x: 0, y: 0, width: item.sourceImage.size.width, height: item.sourceImage.size.height))
         
@@ -45,7 +45,7 @@ extension MediaProcessor {
         
         let newImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
-        
+        progress?(1.0)
         completion(MediaProcessResult(processedUrl: nil, image: newImage), nil)
     }
 }
