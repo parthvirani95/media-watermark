@@ -97,6 +97,7 @@ extension MediaProcessor {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession.error)
             }
         })
+        progressCallbacks[exportSession] = progress
         exportSessions.append(exportSession)
     }
   
