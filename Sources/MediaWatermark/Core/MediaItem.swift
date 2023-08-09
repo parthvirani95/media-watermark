@@ -90,7 +90,7 @@ public class MediaItem {
     
     // MARK: - private
     private func urlHasImageExtension(url: URL) -> Bool {
-        let imageExtensions = ["png", "jpg", "gif"]
+        let imageExtensions = ["png", "jpg", "gif", "webp"]
         return imageExtensions.contains(url.pathExtension)
     }
 }
