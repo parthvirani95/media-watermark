@@ -76,13 +76,21 @@ extension MediaProcessor {
         exportSession?.outputURL = processedUrl
         exportSession?.outputFileType = AVFileType.mp4
         
-        exportSession?.exportAsynchronously(completionHandler: {
+        exportSession?.exportAsynchronously(completionHandler: { [weak self] in
+            self?.exportSessions.removeAll { $0 == exportSession }
             if exportSession?.status == AVAssetExportSession.Status.completed {
                 completion(MediaProcessResult(processedUrl: processedUrl, image: nil), nil)
             } else {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession?.error)
             }
         })
+        if let exportSession = exportSession {
+          exportSessions.append(exportSession)
+        }
+    }
+  
+    public func cancelExport() {
+      exportSessions.forEach { $0.cancelExport() }
     }
     
     // MARK: - private

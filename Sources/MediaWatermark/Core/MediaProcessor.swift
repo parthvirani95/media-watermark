@@ -7,8 +7,10 @@
 //
 
 import Foundation
+import AVFoundation
 
 public class MediaProcessor {
+    internal var exportSessions: [AVAssetExportSession] = []
     public var filterProcessor: FilterProcessor! = nil
     
     public init() {}
