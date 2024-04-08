@@ -60,35 +60,33 @@ extension MediaProcessor {
         optionalLayer.backgroundColor = UIColor.clear.cgColor
         
       
-        if let image = optionalLayer.toImage() {
-                // Save the image to the photo library or your desired location
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil) // This saves the image to the photo library
-                // For saving to a custom location, use other methods like saving to a file.
-        }
+//        if let image = optionalLayer.toImage() {
+//                // Save the image to the photo library or your desired location
+//            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil) // This saves the image to the photo library
+//                // For saving to a custom location, use other methods like saving to a file.
+//        }
 //      
         
         let parentLayer = CALayer()
         let videoLayer = CALayer()
-        parentLayer.backgroundColor = UIColor.clear.cgColor
-        videoLayer.backgroundColor = UIColor.clear.cgColor
+   
         parentLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
         videoLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-        parentLayer.backgroundColor = UIColor.clear.cgColor
-        videoLayer.backgroundColor = UIColor.clear.cgColor
+
         parentLayer.addSublayer(videoLayer)
         parentLayer.addSublayer(optionalLayer)
-     
-        if let image1 = videoLayer.toImage() {
-                // Save the image to the photo library or your desired location
-             UIImageWriteToSavedPhotosAlbum(image1, nil, nil, nil) // This saves the image to the photo library
-                // For saving to a custom location, use other methods like saving to a file.
-        }
-        
-        if let image2 = parentLayer.toImage() {
-                // Save the image to the photo library or your desired location
-            UIImageWriteToSavedPhotosAlbum(image2, nil, nil, nil) // This saves the image to the photo library
-                // For saving to a custom location, use other methods like saving to a file.
-        }
+//     
+//        if let image1 = videoLayer.toImage() {
+//                // Save the image to the photo library or your desired location
+//             UIImageWriteToSavedPhotosAlbum(image1, nil, nil, nil) // This saves the image to the photo library
+//                // For saving to a custom location, use other methods like saving to a file.
+//        }
+//        
+//        if let image2 = parentLayer.toImage() {
+//                // Save the image to the photo library or your desired location
+//            UIImageWriteToSavedPhotosAlbum(image2, nil, nil, nil) // This saves the image to the photo library
+//                // For saving to a custom location, use other methods like saving to a file.
+//        }
         
         
         let fps = Int32(item.sourceAsset.tracks(withMediaType: .video).first!.nominalFrameRate)
