@@ -14,6 +14,16 @@ let kProcessedTemporaryVideoFileNameExtension = "mov"
 let kMediaContentTimeValue: Int64 = 1
 //let kMediaContentTimeScale: Int32 = 30
 
+extension CALayer {
+    func toImage() -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(bounds.size,false, UIScreen.main.scale)
+        defer { UIGraphicsEndImageContext() }
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+        render(in: context)
+        return UIGraphicsGetImageFromCurrentImageContext()
+    }
+}
+
 extension MediaProcessor {
     func processVideoWithElements(item: MediaItem,outputVideoPath: URL, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
         let mixComposition = AVMutableComposition()
@@ -22,6 +32,7 @@ extension MediaProcessor {
         let clipVideoTrack = item.sourceAsset.tracks(withMediaType: AVMediaType.video).first
         let clipAudioTrack = item.sourceAsset.tracks(withMediaType: AVMediaType.audio).first
         
+  
         do {
             try compositionVideoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: item.sourceAsset.duration), of: clipVideoTrack!, at: CMTime.zero)
         } catch {
@@ -46,13 +57,39 @@ extension MediaProcessor {
         processAndAddElements(item: item, layer: optionalLayer)
         optionalLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
         optionalLayer.masksToBounds = true
+        optionalLayer.backgroundColor = UIColor.clear.cgColor
+        
+      
+        if let image = optionalLayer.toImage() {
+                // Save the image to the photo library or your desired location
+            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil) // This saves the image to the photo library
+                // For saving to a custom location, use other methods like saving to a file.
+        }
+//      
         
         let parentLayer = CALayer()
         let videoLayer = CALayer()
+        parentLayer.backgroundColor = UIColor.clear.cgColor
+        videoLayer.backgroundColor = UIColor.clear.cgColor
         parentLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
         videoLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
+        parentLayer.backgroundColor = UIColor.clear.cgColor
+        videoLayer.backgroundColor = UIColor.clear.cgColor
         parentLayer.addSublayer(videoLayer)
         parentLayer.addSublayer(optionalLayer)
+     
+        if let image1 = videoLayer.toImage() {
+                // Save the image to the photo library or your desired location
+             UIImageWriteToSavedPhotosAlbum(image1, nil, nil, nil) // This saves the image to the photo library
+                // For saving to a custom location, use other methods like saving to a file.
+        }
+        
+        if let image2 = parentLayer.toImage() {
+                // Save the image to the photo library or your desired location
+            UIImageWriteToSavedPhotosAlbum(image2, nil, nil, nil) // This saves the image to the photo library
+                // For saving to a custom location, use other methods like saving to a file.
+        }
+        
         
         let fps = Int32(item.sourceAsset.tracks(withMediaType: .video).first!.nominalFrameRate)
       
@@ -89,38 +126,20 @@ extension MediaProcessor {
           }
         }
         
-        exportSession.exportAsynchronously { [weak self, unowned exportSession] in
-            guard let self = self else { return }
-            
-//            self.exportSessions.removeAll { $0 == exportSession }
-//            self.progressCallbacks[exportSession] = nil
-//            
-//            if self.progressCallbacks.isEmpty {
-//                self.clearTimer()
-//            }
-            
-            if exportSession.status == .completed {
+        exportSession.exportAsynchronously(completionHandler: { [weak self] in
+            self?.exportSessions.removeAll { $0 == exportSession }
+            self?.progressCallbacks[exportSession] = nil
+            if self?.progressCallbacks.isEmpty ?? false {
+                self?.clearTimer()
+            }
+            if exportSession.status == AVAssetExportSession.Status.completed {
                 completion(MediaProcessResult(processedUrl: outputVideoPath, image: nil), nil)
             } else {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession.error)
             }
-        }
-
-        
-//        exportSession.exportAsynchronously(completionHandler: { [weak self] in
-//            self?.exportSessions.removeAll { $0 == exportSession }
-//            self?.progressCallbacks[exportSession] = nil
-//            if self?.progressCallbacks.isEmpty ?? false {
-//                self?.clearTimer()
-//            }
-//            if exportSession.status == AVAssetExportSession.Status.completed {
-//                completion(MediaProcessResult(processedUrl: outputVideoPath, image: nil), nil)
-//            } else {
-//                completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession.error)
-//            }
-//        })
-//        progressCallbacks[exportSession] = progress
-//        exportSessions.append(exportSession)
+        })
+        progressCallbacks[exportSession] = progress
+        exportSessions.append(exportSession)
     }
   
     func clearTimer() {
