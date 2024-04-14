@@ -36,6 +36,7 @@ extension MediaProcessor {
             try compositionVideoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: item.sourceAsset.duration), of: clipVideoTrack!, at: CMTime.zero)
         } catch {
             completion(MediaProcessResult(processedUrl: nil, image: nil), error)
+            return
         }
         
         if (clipAudioTrack != nil) {
@@ -45,6 +46,7 @@ extension MediaProcessor {
                 try compositionAudioTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: item.sourceAsset.duration), of: clipAudioTrack!, at: CMTime.zero)
             } catch {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), error)
+                return
             }
         }
         
@@ -81,31 +83,30 @@ extension MediaProcessor {
         
         var videoComposition:AVVideoComposition! = nil
         
-        
         if(watermarkElement != nil){
             let watermarkFilter = CIFilter(name: "CISourceOverCompositing")!
             let watermarkImage = CIImage(image: watermarkElement)
             videoComposition = AVVideoComposition(asset: item.sourceAsset) { (filteringRequest) in
-                let source = filteringRequest.sourceImage.clampedToExtent()
+            let source = filteringRequest.sourceImage.clampedToExtent()
                 watermarkFilter.setValue(source, forKey: "inputBackgroundImage")
                 let transform = CGAffineTransform(translationX: filteringRequest.sourceImage.extent.width - (watermarkImage?.extent.width)! - 2, y: 0)
                 watermarkFilter.setValue(watermarkImage?.transformed(by: transform), forKey: "inputImage")
                 filteringRequest.finish(with: watermarkFilter.outputImage!, context: nil)
             }
-        } else{
-            videoComposition = AVMutableVideoComposition()
-//            videoComposition.frameDuration = CMTimeMake(value: kMediaContentTimeValue, timescale: fps)
-//            videoComposition.renderSize = sizeOfVideo
-//            videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
-//            
-            let instruction = AVMutableVideoCompositionInstruction()
-            instruction.timeRange = CMTimeRangeMake(start: CMTime.zero, duration: mixComposition.duration)
-            
-            let videoTrack = mixComposition.tracks(withMediaType: AVMediaType.video).first
-            let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack!)
-            layerInstruction.setTransform(transform(avAsset: item.sourceAsset, scaleFactor: kMediaContentDefaultScale), at: CMTime.zero)
-            instruction.layerInstructions = [layerInstruction]
-//            videoComposition.instructions = [instruction]
+        } else {
+            completion(
+                MediaProcessResult(processedUrl: nil, image: nil),
+                NSError(domain: "VideoProcessor", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get watermark"])
+            )
+            return
+        }
+        
+        if(videoComposition == nil){
+            completion(
+                MediaProcessResult(processedUrl: nil, image: nil),
+                NSError(domain: "VideoProcessor", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get Video Composition"])
+            )
+            return
         }
         
         let processedUrl = processedMoviePath()
@@ -135,6 +136,7 @@ extension MediaProcessor {
                 completion(MediaProcessResult(processedUrl: processedUrl, image: nil), nil)
             } else {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession.error)
+                return
             }
         })
         progressCallbacks[exportSession] = progress
