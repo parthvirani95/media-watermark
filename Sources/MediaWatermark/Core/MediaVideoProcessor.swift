@@ -10,7 +10,7 @@ import UIKit
 import AVFoundation
 
 let kMediaContentDefaultScale: CGFloat = 1
-let kProcessedTemporaryVideoFileNameExtension = "mov"
+let kProcessedTemporaryVideoFileNameExtension = "mp4"
 let kMediaContentTimeValue: Int64 = 1
 //let kMediaContentTimeScale: Int32 = 30
 
@@ -25,7 +25,7 @@ extension CALayer {
 }
 
 extension MediaProcessor {
-    func processVideoWithElements(item: MediaItem,outputVideoPath: URL, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
+    func processVideoWithElements(item: MediaItem, outputVideoPath: URL, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
         let mixComposition = AVMutableComposition()
         let compositionVideoTrack = mixComposition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)
       
@@ -56,16 +56,6 @@ extension MediaProcessor {
         let optionalLayer = CALayer()
         processAndAddElements(item: item, layer: optionalLayer)
         optionalLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-//        optionalLayer.masksToBounds = true
-//        optionalLayer.backgroundColor = UIColor.clear.cgColor
-        
-      
-//        if let image = optionalLayer.toImage() {
-//                // Save the image to the photo library or your desired location
-//            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil) // This saves the image to the photo library
-//                // For saving to a custom location, use other methods like saving to a file.
-//        }
-//      
         
         let parentLayer = CALayer()
         let videoLayer = CALayer()
@@ -75,25 +65,11 @@ extension MediaProcessor {
 
         parentLayer.addSublayer(videoLayer)
         parentLayer.addSublayer(optionalLayer)
-//     
-//        if let image1 = videoLayer.toImage() {
-//                // Save the image to the photo library or your desired location
-//             UIImageWriteToSavedPhotosAlbum(image1, nil, nil, nil) // This saves the image to the photo library
-//                // For saving to a custom location, use other methods like saving to a file.
-//        }
-//        
-//        if let image2 = parentLayer.toImage() {
-//                // Save the image to the photo library or your desired location
-//            UIImageWriteToSavedPhotosAlbum(image2, nil, nil, nil) // This saves the image to the photo library
-//                // For saving to a custom location, use other methods like saving to a file.
-//        }
-        
-        
+
         let fps = Int32(item.sourceAsset.tracks(withMediaType: .video).first!.nominalFrameRate)
       
         let videoComposition = AVMutableVideoComposition()
         videoComposition.frameDuration = CMTimeMake(value: kMediaContentTimeValue, timescale: fps)
-//      videoComposition.frameDuration = CMTimeMake(value: kMediaContentTimeValue, timescale: kMediaContentTimeScale)
         videoComposition.renderSize = sizeOfVideo
         videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
         
@@ -107,8 +83,8 @@ extension MediaProcessor {
         instruction.layerInstructions = [layerInstruction]
         videoComposition.instructions = [instruction]
         
-//        let processedUrl = processedMoviePath()
-       clearTemporaryData(url: outputVideoPath, completion: completion)
+        let processedUrl = processedMoviePath()
+        clearTemporaryData(url: outputVideoPath, completion: completion)
         
         let exportSession = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)
         guard let exportSession = exportSession else { return }
