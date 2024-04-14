@@ -81,6 +81,7 @@ extension MediaProcessor {
         
         var videoComposition:AVVideoComposition! = nil
         
+        
         if(watermarkElement != nil){
             let watermarkFilter = CIFilter(name: "CISourceOverCompositing")!
             let watermarkImage = CIImage(image: watermarkElement)
