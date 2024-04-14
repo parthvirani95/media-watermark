@@ -26,6 +26,7 @@ extension CALayer {
 
 extension MediaProcessor {
     func processVideoWithElements(item: MediaItem, outputVideoPath: URL, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
+        
         let mixComposition = AVMutableComposition()
         let compositionVideoTrack = mixComposition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)
         let clipVideoTrack = item.sourceAsset.tracks(withMediaType: AVMediaType.video).first
@@ -57,14 +58,10 @@ extension MediaProcessor {
         //        let optionalLayer = CALayer()
         //        processAndAddElements(item: item, layer: optionalLayer)
         //        optionalLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-        //
-        //
         //        let parentLayer = CALayer()
         //        let videoLayer = CALayer()
-        //
         //        parentLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
         //        videoLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-        //
         //        parentLayer.addSublayer(videoLayer)
         //        parentLayer.addSublayer(optionalLayer)
         
@@ -73,7 +70,6 @@ extension MediaProcessor {
         var watermarkElement: UIImage! = nil
         
         for element in item.mediaElements {
-            
             if element.type == .view {
                 watermarkElement = UIImage(view: element.contentView)
             } else if element.type == .image {
@@ -109,13 +105,13 @@ extension MediaProcessor {
             return
         }
         
-        let processedUrl = processedMoviePath()
-        clearTemporaryData(url: processedUrl, completion: completion)
+//        let processedUrl = processedMoviePath()
+        clearTemporaryData(url: outputVideoPath, completion: completion)
         
         let exportSession = AVAssetExportSession(asset: item.sourceAsset, presetName: AVAssetExportPresetHighestQuality)
         guard let exportSession = exportSession else { return }
         exportSession.videoComposition = videoComposition
-        exportSession.outputURL = processedUrl
+        exportSession.outputURL = outputVideoPath
         exportSession.outputFileType = AVFileType.mp4
         
         if progressTimer == nil {
@@ -133,7 +129,7 @@ extension MediaProcessor {
                 self?.clearTimer()
             }
             if exportSession.status == AVAssetExportSession.Status.completed {
-                completion(MediaProcessResult(processedUrl: processedUrl, image: nil), nil)
+                completion(MediaProcessResult(processedUrl: outputVideoPath, image: nil), nil)
             } else {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession.error)
                 return
