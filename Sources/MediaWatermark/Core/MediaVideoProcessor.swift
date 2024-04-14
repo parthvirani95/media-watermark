@@ -24,6 +24,20 @@ extension CALayer {
     }
 }
 
+extension UIImage {
+    func resizeImage(newWidth: CGFloat) -> UIImage {
+        
+        let scale = newWidth / self.size.width
+        let newHeight = self.size.height * scale
+        UIGraphicsBeginImageContext(CGSize(width: newWidth, height: newHeight))
+        self.draw(in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return newImage!
+    }
+}
+
 extension MediaProcessor {
     func processVideoWithElements(item: MediaItem, outputVideoPath: URL, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
         
@@ -75,6 +89,10 @@ extension MediaProcessor {
             } else if element.type == .image {
                 watermarkElement = element.contentImage
             }
+        }
+        
+        if(watermarkElement != nil){
+            watermarkElement = watermarkElement.resizeImage(newWidth: sizeOfVideo.width)
         }
         
         var videoComposition:AVVideoComposition! = nil
