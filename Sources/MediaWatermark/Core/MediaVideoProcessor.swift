@@ -56,8 +56,8 @@ extension MediaProcessor {
         let optionalLayer = CALayer()
         processAndAddElements(item: item, layer: optionalLayer)
         optionalLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-        optionalLayer.masksToBounds = true
-        optionalLayer.backgroundColor = UIColor.clear.cgColor
+//        optionalLayer.masksToBounds = true
+//        optionalLayer.backgroundColor = UIColor.clear.cgColor
         
       
 //        if let image = optionalLayer.toImage() {
