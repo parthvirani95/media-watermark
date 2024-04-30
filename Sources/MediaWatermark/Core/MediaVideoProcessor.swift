@@ -10,7 +10,7 @@ import UIKit
 import AVFoundation
 
 let kMediaContentDefaultScale: CGFloat = 1
-let kProcessedTemporaryVideoFileNameExtension = "mov"
+let kProcessedTemporaryVideoFileNameExtension = "mp4"
 let kMediaContentTimeValue: Int64 = 1
 //let kMediaContentTimeScale: Int32 = 30
 
@@ -24,104 +24,120 @@ extension CALayer {
     }
 }
 
+extension UIImage {
+    func resizeImage(newWidth: CGFloat) -> UIImage {
+        
+        let scale = newWidth / self.size.width
+        let newHeight = self.size.height * scale
+        UIGraphicsBeginImageContext(CGSize(width: newWidth, height: newHeight))
+        self.draw(in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return newImage!
+    }
+}
+
 extension MediaProcessor {
-    func processVideoWithElements(item: MediaItem,outputVideoPath: URL, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
+    func processVideoWithElements(item: MediaItem, outputVideoPath: URL, completion: @escaping ProcessCompletionHandler, progress: ((Double) -> Void)? = nil) {
+        
         let mixComposition = AVMutableComposition()
         let compositionVideoTrack = mixComposition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)
-      
         let clipVideoTrack = item.sourceAsset.tracks(withMediaType: AVMediaType.video).first
         let clipAudioTrack = item.sourceAsset.tracks(withMediaType: AVMediaType.audio).first
         
-  
+        
         do {
             try compositionVideoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: item.sourceAsset.duration), of: clipVideoTrack!, at: CMTime.zero)
         } catch {
             completion(MediaProcessResult(processedUrl: nil, image: nil), error)
+            return
         }
         
         if (clipAudioTrack != nil) {
             let compositionAudioTrack = mixComposition.addMutableTrack(withMediaType: AVMediaType.audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-
+            
             do {
                 try compositionAudioTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: item.sourceAsset.duration), of: clipAudioTrack!, at: CMTime.zero)
             } catch {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), error)
+                return
             }
         }
-       
+        
         compositionVideoTrack?.preferredTransform = (item.sourceAsset.tracks(withMediaType: AVMediaType.video).first?.preferredTransform)!
         
         let sizeOfVideo = item.size
         
-        let optionalLayer = CALayer()
-        processAndAddElements(item: item, layer: optionalLayer)
-        optionalLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-//        optionalLayer.masksToBounds = true
-//        optionalLayer.backgroundColor = UIColor.clear.cgColor
-        
-      
-//        if let image = optionalLayer.toImage() {
-//                // Save the image to the photo library or your desired location
-//            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil) // This saves the image to the photo library
-//                // For saving to a custom location, use other methods like saving to a file.
-//        }
-//      
-        
-        let parentLayer = CALayer()
-        let videoLayer = CALayer()
-   
-        parentLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-        videoLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
-
-        parentLayer.addSublayer(videoLayer)
-        parentLayer.addSublayer(optionalLayer)
-//     
-//        if let image1 = videoLayer.toImage() {
-//                // Save the image to the photo library or your desired location
-//             UIImageWriteToSavedPhotosAlbum(image1, nil, nil, nil) // This saves the image to the photo library
-//                // For saving to a custom location, use other methods like saving to a file.
-//        }
-//        
-//        if let image2 = parentLayer.toImage() {
-//                // Save the image to the photo library or your desired location
-//            UIImageWriteToSavedPhotosAlbum(image2, nil, nil, nil) // This saves the image to the photo library
-//                // For saving to a custom location, use other methods like saving to a file.
-//        }
-        
+        //        let optionalLayer = CALayer()
+        //        processAndAddElements(item: item, layer: optionalLayer)
+        //        optionalLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
+        //        let parentLayer = CALayer()
+        //        let videoLayer = CALayer()
+        //        parentLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
+        //        videoLayer.frame = CGRect(x: 0, y: 0, width: sizeOfVideo.width, height: sizeOfVideo.height)
+        //        parentLayer.addSublayer(videoLayer)
+        //        parentLayer.addSublayer(optionalLayer)
         
         let fps = Int32(item.sourceAsset.tracks(withMediaType: .video).first!.nominalFrameRate)
-      
-        let videoComposition = AVMutableVideoComposition()
-        videoComposition.frameDuration = CMTimeMake(value: kMediaContentTimeValue, timescale: fps)
-//      videoComposition.frameDuration = CMTimeMake(value: kMediaContentTimeValue, timescale: kMediaContentTimeScale)
-        videoComposition.renderSize = sizeOfVideo
-        videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
         
-        let instruction = AVMutableVideoCompositionInstruction()
-        instruction.timeRange = CMTimeRangeMake(start: CMTime.zero, duration: mixComposition.duration)
+        var watermarkElement: UIImage! = nil
         
-        let videoTrack = mixComposition.tracks(withMediaType: AVMediaType.video).first
-        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack!)
-        layerInstruction.setTransform(transform(avAsset: item.sourceAsset, scaleFactor: kMediaContentDefaultScale), at: CMTime.zero)
+        for element in item.mediaElements {
+            if element.type == .view {
+                watermarkElement = UIImage(view: element.contentView)
+            } else if element.type == .image {
+                watermarkElement = element.contentImage
+            }
+        }
         
-        instruction.layerInstructions = [layerInstruction]
-        videoComposition.instructions = [instruction]
+        if(watermarkElement != nil){
+            watermarkElement = watermarkElement.resizeImage(newWidth: sizeOfVideo.width)
+        }
+        
+        var videoComposition:AVVideoComposition! = nil
+        
+        if(watermarkElement != nil){
+            let watermarkFilter = CIFilter(name: "CISourceOverCompositing")!
+            let watermarkImage = CIImage(image: watermarkElement)
+            videoComposition = AVVideoComposition(asset: item.sourceAsset) { (filteringRequest) in
+            let source = filteringRequest.sourceImage.clampedToExtent()
+                watermarkFilter.setValue(source, forKey: "inputBackgroundImage")
+                let transform = CGAffineTransform(translationX: filteringRequest.sourceImage.extent.width - (watermarkImage?.extent.width)! - 2, y: 0)
+                watermarkFilter.setValue(watermarkImage?.transformed(by: transform), forKey: "inputImage")
+                filteringRequest.finish(with: watermarkFilter.outputImage!, context: nil)
+            }
+        } else {
+            completion(
+                MediaProcessResult(processedUrl: nil, image: nil),
+                NSError(domain: "VideoProcessor", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get watermark"])
+            )
+            return
+        }
+        
+        if(videoComposition == nil){
+            completion(
+                MediaProcessResult(processedUrl: nil, image: nil),
+                NSError(domain: "VideoProcessor", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get Video Composition"])
+            )
+            return
+        }
         
 //        let processedUrl = processedMoviePath()
-       clearTemporaryData(url: outputVideoPath, completion: completion)
+        clearTemporaryData(url: outputVideoPath, completion: completion)
         
-        let exportSession = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)
+        let exportSession = AVAssetExportSession(asset: item.sourceAsset, presetName: AVAssetExportPresetHighestQuality)
         guard let exportSession = exportSession else { return }
         exportSession.videoComposition = videoComposition
         exportSession.outputURL = outputVideoPath
         exportSession.outputFileType = AVFileType.mp4
-    
+        
         if progressTimer == nil {
-          self.progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            self.progressCallbacks.forEach { key, value in
-              value(Double(key.progress))
+            self.progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+                self.progressCallbacks.forEach { key, value in
+                    value(Double(key.progress))
+                }
             }
-          }
         }
         
         exportSession.exportAsynchronously(completionHandler: { [weak self] in
@@ -134,27 +150,28 @@ extension MediaProcessor {
                 completion(MediaProcessResult(processedUrl: outputVideoPath, image: nil), nil)
             } else {
                 completion(MediaProcessResult(processedUrl: nil, image: nil), exportSession.error)
+                return
             }
         })
         progressCallbacks[exportSession] = progress
         exportSessions.append(exportSession)
     }
-  
+    
     func clearTimer() {
-      progressTimer?.invalidate()
-      progressTimer = nil
+        progressTimer?.invalidate()
+        progressTimer = nil
     }
-  
+    
     public func cancelExport() {
-      exportSessions.forEach { $0.cancelExport() }
-      clearTimer()
+        exportSessions.forEach { $0.cancelExport() }
+        clearTimer()
     }
     
     // MARK: - private
     private func processAndAddElements(item: MediaItem, layer: CALayer) {
         for element in item.mediaElements {
             var elementLayer: CALayer! = nil
-    
+            
             if element.type == .view {
                 elementLayer = CALayer()
                 elementLayer.contents = UIImage(view: element.contentView).cgImage
@@ -165,14 +182,14 @@ extension MediaProcessor {
                 elementLayer = CATextLayer()
                 (elementLayer as! CATextLayer).string = element.contentText
             }
-
+            
             elementLayer.frame = element.frame
             layer.addSublayer(elementLayer)
         }
     }
     
     private func processedMoviePath() -> URL {
-      let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/" + UUID().uuidString + "." + kProcessedTemporaryVideoFileNameExtension
+        let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/" + UUID().uuidString + "." + kProcessedTemporaryVideoFileNameExtension
         return URL(fileURLWithPath: documentsPath)
     }
     
